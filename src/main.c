@@ -69,6 +69,7 @@ int main(int argc, char *argv[])
 			printf("Unable to create database file\n");
 			return STATUS_ERROR;
 		}
+		//TODO: when -l -n -a is given, this might create a new header by mistake if file already exists
 		if (create_db_header(db_fd, &db_hdr) == STATUS_ERROR)
 		{
 			printf("Failed to create database header\n");
@@ -76,7 +77,7 @@ int main(int argc, char *argv[])
 			return STATUS_ERROR;
 		}
 	} else
-	{
+	{ 
 		db_fd = open_db_file(filepath);
 		if (db_fd == STATUS_ERROR)
 		{
@@ -122,7 +123,7 @@ int main(int argc, char *argv[])
 		}
 
 	}
-
+	//TODO: something about bad file descriptor comes from here with -n -l -a
 	output_file(db_fd, db_hdr, employees_ptr); 
 
 	free(db_hdr);

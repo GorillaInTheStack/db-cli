@@ -10,7 +10,7 @@
 #include "common.h"
 #include "parse.h"
 
-void list_employees(struct dbheader_t *dbhdr, struct employee_t *employees) 
+void list_employees(const struct dbheader_t *dbhdr, const struct employee_t *employees) 
 {
 	int i = 0;
 	for(; i < dbhdr->count; i++)
@@ -88,7 +88,7 @@ int add_employee(struct dbheader_t *dbhdr, struct employee_t **employees, char *
 	return STATUS_OK;
 }
 
-int read_employees(int fd, struct dbheader_t *dbhdr, struct employee_t **employeesOut) 
+int read_employees(int fd, const struct dbheader_t *dbhdr, struct employee_t **employeesOut) 
 {
 	if (fd <= 0) 
 	{
@@ -257,7 +257,7 @@ int validate_db_header(int fd, struct dbheader_t **headerOut)
 
 }
 
-int create_db_header(int fd, struct dbheader_t **headerOut) 
+int create_db_header(const int fd, struct dbheader_t **headerOut) 
 {
 	struct dbheader_t *header = calloc(1, sizeof(struct dbheader_t));
 	if (header == NULL) 
