@@ -1,6 +1,7 @@
 # Prerequisites
-*.d
-
+*.nd
+bin/*
+*.db
 # Object files
 *.o
 *.ko
