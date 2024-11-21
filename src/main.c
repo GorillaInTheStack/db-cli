@@ -13,8 +13,10 @@ void print_usage(char *argv[])
 {
 	printf("Usage: %s -n -f <db file>\n", argv[0]);
 	printf("\t -n - create new db file\n");
-	printf("\t -f - (required) path to db file\n");
-	printf("\t -a - new entry to add to db\n");
+	printf("\t -f \"path\" - (required) path to db file\n");
+	printf("\t -a \"name,address,hours\" - new entry to add to db\n");
+	printf("\t -d \"name\" - delete employee \"name\" from database file\n");
+	printf("\t -u \"name\" -v hours - update employee \"name\" hours\n");
 	return;
 }
 
@@ -28,8 +30,12 @@ int main(int argc, char *argv[])
 	struct dbheader_t *db_hdr = NULL;
 	struct employee_t *employees_ptr = NULL; 
 	bool ls_employees = false;
+	char *search_name = NULL;
+	bool delete = false;
+	bool update = false;
+	int input_hours = -1;
 
-	while ((c= getopt(argc, argv, "nf:a:l")) != -1) 
+	while ((c= getopt(argc, argv, "nf:a:ld:u:v:")) != -1) 
 	{
 			switch(c)
 			{
@@ -41,9 +47,23 @@ int main(int argc, char *argv[])
 				break;
 			case 'a':
 				newinput = optarg;
+				newinput[DB_INPUT_MAX_SIZE-1] = '\0';
 				break;
 			case 'l':
 				ls_employees = true;
+				break;
+			case 'd':
+				search_name = optarg;
+				search_name[NAME_SIZE-1] = '\0';
+				delete = true;
+				break;
+			case 'u':
+				search_name = optarg;
+				search_name[NAME_SIZE-1] = '\0';
+				update = true;
+				break;
+			case 'v':
+				input_hours = atoi(optarg);
 				break;
 			case '?':
 				printf("Unknown argument -%c\n", c);
@@ -56,7 +76,7 @@ int main(int argc, char *argv[])
 	}
 
 	if(filepath == NULL){
-		printf("Filepath is a required argument\n");
+		printf("Path is a required argument\n");
 		print_usage(argv);
 		return STATUS_ERROR;
 	}
@@ -94,20 +114,94 @@ int main(int argc, char *argv[])
 		if (status == STATUS_ERROR)
 		{
 			printf("read_employees: Error reading existing employees\n");
+
+			if (db_fd > 0)
+			{
+				close(db_fd);
+			}
+			if (db_hdr)
+			{
+				free(db_hdr);
+				db_hdr = NULL;
+			}
+			if (employees_ptr)
+			{
+				free(employees_ptr);
+				employees_ptr = NULL;
+			}
+
 			return STATUS_ERROR;
 		}
 	}
 
 	if (newinput)
 	{
-		add_employee(db_hdr, &employees_ptr, newinput);	
-
 		if(employees_ptr == NULL)
 		{
-			perror("calloc");
+			printf("There seems to be a problem with the database file\n");
 			close(db_fd);
-			free(db_hdr);
-			db_hdr = NULL;
+			if (db_hdr)
+			{
+				free(db_hdr);
+				db_hdr = NULL;
+			}
+			return STATUS_ERROR;
+		}
+
+		int status = add_employee(db_hdr, &employees_ptr, newinput);	
+		if (status == STATUS_ERROR)
+		{
+			printf("Failed to add employee\n");
+
+			if (db_fd > 0)
+			{
+				close(db_fd);
+			}
+			if (db_hdr)
+			{
+				free(db_hdr);
+				db_hdr = NULL;
+			}
+			if (employees_ptr)
+			{
+				free(employees_ptr);
+				employees_ptr = NULL;
+			}
+
+			return STATUS_ERROR;
+		}
+
+	}
+
+	if (update)
+	{
+		if (input_hours < 0)
+		{
+			printf("Error: to update an employee with -u input the hours with flag -v [hours]\n");
+			return STATUS_ERROR;
+		}
+		int status = update_employee_hours_by_name(db_hdr, employees_ptr, search_name, input_hours);
+		if (status == STATUS_OK)
+		{
+			printf("Employee hours updated.\n");
+		}
+		else
+		{
+			printf("There was a problem updating the employee.\n");
+			return STATUS_ERROR;
+		}
+	}
+
+	if (delete)
+	{
+		int status = del_employee_by_name(db_hdr, &employees_ptr, search_name);
+		if (status == STATUS_OK)
+		{
+			printf("Employee deleted.\n");
+		}
+		else
+		{
+			printf("There was a problem deleting the employee.\n");
 			return STATUS_ERROR;
 		}
 	}
@@ -123,22 +217,20 @@ int main(int argc, char *argv[])
 		}
 
 	}
+
 	//TODO: something about bad file descriptor comes from here with -n -l -a
 	output_file(db_fd, db_hdr, employees_ptr); 
 
-	free(db_hdr);
-	db_hdr = NULL;
-	free(employees_ptr);
-	employees_ptr = NULL;
-	if (newinput)
+	if(db_hdr)
 	{
-		//free(newinput);
-		newinput = NULL;
+		free(db_hdr);
+		db_hdr = NULL;
 	}
-	if (filepath)
+	if (employees_ptr)
 	{
-		//free(filepath);
-		filepath = NULL;
+		free(employees_ptr);
+		employees_ptr = NULL;
 	}
+
 	return STATUS_OK;
 }

@@ -6,12 +6,115 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <string.h>
+#include <stdbool.h>
 
 #include "common.h"
 #include "parse.h"
 
+
+int del_employee_by_name(struct dbheader_t *dbhdr, struct employee_t **employees, const char *name)
+{
+	if (dbhdr == NULL)
+	{
+		printf("del_employee_by_name: Bad pointer to header struct\n");
+		return STATUS_ERROR;
+	}
+
+	if (employees == NULL)
+	{
+		printf("del_employee_by_name: Bad pointer to employee struct\n");
+		return STATUS_ERROR;
+	}
+
+	if (name == NULL)
+	{
+		printf("del_employee_by_name: Bad pointer to input char\n");
+		return STATUS_ERROR;
+	}
+
+	// case: empty struct
+	if (dbhdr->count == 0)
+	{
+		printf("Empty file, nothing to delete\n");
+		return STATUS_OK;
+	}
+
+	// case: more than one struct
+	bool found = false;
+	size_t len = strnlen(name, NAME_SIZE);
+	int i = 0;
+	for(; i < dbhdr-> count; i++)
+	{
+		if (found)
+		{
+			(*employees)[i-1] = (*employees)[i];	
+		}
+		else
+		{
+			if (strncmp((*employees)[i].name, name, NAME_SIZE) == 0)
+			{
+				found = true;
+			}
+		}
+	}
+
+	if(found)
+	{
+		struct employee_t empty_employee = {0};
+		// nullify the struct, not the pointer
+		(*employees)[dbhdr->count-1] = empty_employee;
+		if(dbhdr->count > 0)
+		{
+			dbhdr->count--;
+		}
+		return STATUS_OK;
+	}
+	else
+	{
+		return STATUS_ERROR;
+	}
+}
+
+int update_employee_hours_by_name(const struct dbheader_t *dbhdr, struct employee_t *employees, const char *name, const int input_hours)
+{
+	if (dbhdr == NULL)
+	{
+		printf("update_employee_hours_by_name: Bad pointer to header struct\n");
+		return STATUS_ERROR;
+	}
+
+	if (employees == NULL)
+	{
+		printf("update_employee_hours_by_name: Bad pointer to employee struct\n");
+		return STATUS_ERROR;
+	}
+
+	if (name == NULL)
+	{
+		printf("update_employee_hours_by_name: Bad pointer to input char\n");
+		return STATUS_ERROR;
+	}
+
+	size_t len = strnlen(name, NAME_SIZE);
+	int i = 0;
+	for (; i < dbhdr->count; i++)
+	{
+		if (strncmp(employees[i].name, name, len))
+		{
+			employees[i].hours = input_hours;
+			return STATUS_OK;
+		}
+	}
+
+	return STATUS_ERROR;
+}
+
 void list_employees(const struct dbheader_t *dbhdr, const struct employee_t *employees) 
 {
+	if ( dbhdr-> count == 0)
+	{
+		printf("No employees in file to list\n");
+	}
 	int i = 0;
 	for(; i < dbhdr->count; i++)
 	{
@@ -134,6 +237,8 @@ int read_employees(int fd, const struct dbheader_t *dbhdr, struct employee_t **e
 			free(tmp_employees_ptr);
 			return STATUS_ERROR;
 		}
+		tmp_employees_ptr[i].hours = ntohl(tmp_employees_ptr[i].hours);
+		//TODO: when reading convert everything back once we modify so that everything is bigendian
 	}
 
 	*employeesOut = tmp_employees_ptr;
@@ -159,7 +264,7 @@ int output_file(int fd, struct dbheader_t *dbhdr, struct employee_t *employees)
 		printf("Writing empty database file\n");
 	}
 	
-		int seek_bytes = lseek(fd, 0, SEEK_SET);
+	int seek_bytes = lseek(fd, 0, SEEK_SET);
 	if (seek_bytes == STATUS_ERROR)
 	{
 		perror("lseek");
@@ -168,7 +273,8 @@ int output_file(int fd, struct dbheader_t *dbhdr, struct employee_t *employees)
 
 	dbhdr->magic = htonl(DB_MAGIC);
 	dbhdr->version = htons(DB_CURRENT_VERSION);
-	dbhdr->filesize = htonl(sizeof(struct dbheader_t) + (dbhdr->count * sizeof(struct employee_t)));
+	size_t new_file_size = sizeof(struct dbheader_t) + (dbhdr->count * sizeof(struct employee_t));
+	dbhdr->filesize = htonl(new_file_size);
 	unsigned short realcount = dbhdr->count;	
 	dbhdr->count = htons(dbhdr->count);
 	
@@ -178,14 +284,21 @@ int output_file(int fd, struct dbheader_t *dbhdr, struct employee_t *employees)
 		perror("write");
 		return STATUS_ERROR;
 	}
+	seek_bytes = lseek(fd, sizeof(struct dbheader_t), SEEK_SET);
+	if (seek_bytes == STATUS_ERROR)
+	{
+		perror("lseek");
+		return STATUS_ERROR;
+	}
 
-	if(employees){
+	if(employees)
+	{
 		int i = 0;
 		for (; i < realcount; i++)
 		{
 			employees[i].hours = htonl(employees[i].hours);
 			// convert the rest of them after testing
-			write_bytes = write(fd, &employees[i], sizeof(struct employee_t));
+			int write_bytes = write(fd, &employees[i], sizeof(struct employee_t));
 			if (write_bytes == STATUS_ERROR)
 			{
 				perror("write");
@@ -193,6 +306,12 @@ int output_file(int fd, struct dbheader_t *dbhdr, struct employee_t *employees)
 			}
 		}
 	}
+	
+    if (ftruncate(fd, new_file_size) == -1) {
+        perror("ftruncate");
+        return STATUS_ERROR;
+    }
+
 	return STATUS_OK;
 }	
 
