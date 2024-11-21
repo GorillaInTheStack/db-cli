@@ -99,7 +99,7 @@ int update_employee_hours_by_name(const struct dbheader_t *dbhdr, struct employe
 	int i = 0;
 	for (; i < dbhdr->count; i++)
 	{
-		if (strncmp(employees[i].name, name, len))
+		if (strncmp(employees[i].name, name, len) == 0)
 		{
 			employees[i].hours = input_hours;
 			return STATUS_OK;
