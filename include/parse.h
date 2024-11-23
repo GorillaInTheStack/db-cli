@@ -3,119 +3,95 @@
 
 #define DB_MAGIC 0x4c4c4144
 #define DB_CURRENT_VERSION 0x1
-#define NAME_SIZE 256
-#define ADDRESS_SIZE 256
-// 256 + 256 + 11 + 2 + 1 = 526 bytes -> 11 for the hours(char), 2 for the commas, 1 for the null terminator
-#define DB_INPUT_MAX_SIZE (NAME_SIZE + ADDRESS_SIZE + 11 + 2 + 1)
-	struct dbheader_t {
-		unsigned int magic;
-		unsigned short version;
-		unsigned short count;
-		size_t filesize;
-	};
-
-	struct employee_t {
-		char name[NAME_SIZE];
-		char address[ADDRESS_SIZE];
-		unsigned int hours;
-	};
 
 
 	/**
 	 * @brief create the header struct and populate it with initial values 
 	 *
-	 * @param fd database file descriptor
-	 * @param headerOut address to assign the created struct to
+	 * @param ctx Pointer to the DBContext containing the file descriptor and header.
 	 *
 	 * @return 
-	 * 		- STATUS_OK if created successfully, struct is returned in *headerOut
+	 * 		- STATUS_OK if created successfully, and header is returned in ctx->header
 	 * 		- STATUS_ERROR if any error occurs
 	 */
-	int create_db_header(const int fd, struct dbheader_t **headerOut);
+	int create_db_header(DBContext *ctx);
 
 	/**
-	 * @brief Reads in the header of an existing database file and validates the values
+	 * @brief Reads in the header of an existing database file and validates the values.
 	 *
-	 * @param fd database file descriptor
-	 * @param headerOut address to assign the valided struct to
-	 *
-	 * @return 
-	 * 		- STATUS_OK if validated successfully, struct is returned in *headerOut
-	 * 		- STATUS_ERROR if any error occurs
-	 */
-	int validate_db_header(int fd, struct dbheader_t **headerOut);
-
-	/**
-	 * @brief Parses the data belonging to employee_t struct in the database file 
-	 *
-	 * @param fd database file descriptor
-	 * @param dbhdr database file header data
-	 * @param employeesOut returned employee_t data
-	 *
-	 * @return 
-	 * 		- STATUS_OK on successful extraction of employee_t in *employeesOut
-	 * 		- STATUS_ERROR on any failure
-	 */
-	int read_employees(int fd, const struct dbheader_t *dbhdr, struct employee_t **employeesOut);
-
-	/**
-	 * @brief Writes the data structs to file after changes are made
-	 *
-	 * @param fd database file descriptor
-	 * @param dbhdr pointer to the dbheader_t struct
-	 * @param employees pointer to the employee_t struct
-	 *
-	 * @return 
-	 * 		- STATUS_OK if written to file successfully
-	 * 		- STATUS_ERROR if any error occurs
-	 */
-	int output_file(int fd, struct dbheader_t *dbhdr, struct employee_t *employees);
-
-	/**
-	 * @brief Lists the employee_t data currently available in in memory
-	 *
-	 * @param dbhdr database file header data
-	 * @param employees employee data
-	 */
-	void list_employees(const struct dbheader_t *dbhdr, const struct employee_t *employees);
-
-	/**
-	 * @brief Adds a new employee to the database file which is inputted in the form of a string
-	 *
-	 * @param dbhdr database file header data
-	 * @param employees current employees data
-	 * @param addstring new employee to be added. (ex. "Sam Smile,123 Life av.,682")
+	 * @param ctx Pointer to the DBContext containing the file descriptor and header.
 	 *
 	 * @return
-	 * 		- STATUS_OK if employees was updated successfully
-	 * 		- STATUS_ERROR in case of any failure
+	 *      - STATUS_OK if validated successfully, and the header is updated in ctx->header.
+	 *      - STATUS_ERROR if any error occurs.
 	 */
-	int add_employee(struct dbheader_t *dbhdr, struct employee_t **employees, char *addstring);
+	int validate_db_header(DBContext *ctx);
+
 
 	/**
-	 * @brief Delete an employee by name
+	 * @brief Parses the data belonging to the Employee struct in the database file.
 	 *
-	 * @param dbhdr database file header data
-	 * @param employees list of current employees
-	 * @param name the name to search for
+	 * @param ctx Pointer to the DBContext containing the file descriptor and header.
 	 *
-	 * @return 
-	 * 		- STATUS_OK if found and deleted in **employees
-	 * 		- STATUS_ERROR in case of any failure
+	 * @return
+	 *      - STATUS_OK on successful extraction of Employee data, stored in ctx->employees.
+	 *      - STATUS_ERROR on any failure.
 	 */
-	int del_employee_by_name(struct dbheader_t *dbhdr, struct employee_t **employees, const char *name);
+	int read_employees(DBContext *ctx);
 
 	/**
-	 * @brief update employee hours by name
+	 * @brief Writes the header and employee data to the database file after changes are made.
 	 *
-	 * @param dbhdr database file header data
-	 * @param employees list of current employees
-	 * @param name the name to search for
+	 * @param ctx Pointer to the DBContext containing the file descriptor, header, and employees.
 	 *
-	 * @return 
-	 * 		- STATUS_OK if found and hours updated in **employees
-	 * 		- STATUS_ERROR in case of any failure
+	 * @return
+	 *      - STATUS_OK if written to file successfully.
+	 *      - STATUS_ERROR if any error occurs.
 	 */
-	int update_employee_hours_by_name(const struct dbheader_t *dbhdr, struct employee_t *employees, const char *name, const int hours);
+	int output_file(DBContext *ctx);
+
+	/**
+	 * @brief Lists the employee data currently available in memory.
+	 *
+	 * @param ctx Pointer to the DBContext containing the header and employees.
+	 */
+	void list_employees(const DBContext *ctx);
+
+	/**
+	 * @brief Adds a new employee to the database, provided as an input string.
+	 *
+	 * @param ctx Pointer to the DBContext containing the header and employee data.
+	 * @param addstring New employee data to be added in the format "Name,Address,Hours" (e.g., "Sam Smile,123 Life av.,682").
+	 *
+	 * @return
+	 *      - STATUS_OK if the employee was successfully added.
+	 *      - STATUS_ERROR in case of any failure.
+	 */
+	int add_employee(DBContext *ctx, char *addstring);
+
+   /**
+ 	* @brief Deletes an employee from the database by their name.
+ 	*
+ 	* @param ctx Pointer to the DBContext containing the header and employee data.
+ 	* @param name The name of the employee to delete.
+ 	*
+ 	* @return
+ 	*      - STATUS_OK if the employee was found and deleted.
+ 	*      - STATUS_ERROR in case of any failure (e.g., not found).
+ 	*/
+	int del_employee_by_name(DBContext *ctx, const char *name);
+
+   /**
+ 	* @brief Updates the hours worked for an employee, identified by their name.
+ 	*
+ 	* @param ctx Pointer to the DBContext containing the header and employee data.
+ 	* @param name The name of the employee whose hours need to be updated.
+ 	* @param hours The new number of hours to set for the employee.
+ 	*
+ 	* @return
+ 	*      - STATUS_OK if the employee was found and updated.
+ 	*      - STATUS_ERROR in case of any failure (e.g., not found).
+ 	*/
+	int update_employee_hours_by_name(DBContext *ctx, const char *name, const int hours);
 
 #endif

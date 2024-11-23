@@ -1,39 +1,31 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <string.h>
 #include <stdbool.h>
 
-#include "common.h"
+#include "context.h"
 #include "parse.h"
 
 
-int del_employee_by_name(struct dbheader_t *dbhdr, struct employee_t **employees, const char *name)
+int del_employee_by_name(DBContext *ctx, const char *name)
 {
-	if (dbhdr == NULL)
-	{
-		printf("del_employee_by_name: Bad pointer to header struct\n");
-		return STATUS_ERROR;
-	}
-
-	if (employees == NULL)
-	{
-		printf("del_employee_by_name: Bad pointer to employee struct\n");
-		return STATUS_ERROR;
-	}
+	StatusCode status = validate_context(ctx, true);
+    if (status != STATUS_OK) {
+        return status;
+    }
 
 	if (name == NULL)
 	{
-		printf("del_employee_by_name: Bad pointer to input char\n");
-		return STATUS_ERROR;
+		printf("Error: Bad pointer to input char\n");
+		return STATUS_INVALID_ARGUMENT;
 	}
 
 	// case: empty struct
-	if (dbhdr->count == 0)
+	if (ctx->header->count == 0)
 	{
 		printf("Empty file, nothing to delete\n");
 		return STATUS_OK;
@@ -43,15 +35,15 @@ int del_employee_by_name(struct dbheader_t *dbhdr, struct employee_t **employees
 	bool found = false;
 	size_t len = strnlen(name, NAME_SIZE);
 	int i = 0;
-	for(; i < dbhdr-> count; i++)
+	for(; i < ctx->header->count; i++)
 	{
 		if (found)
 		{
-			(*employees)[i-1] = (*employees)[i];	
+			ctx->employees[i-1] = ctx->employees[i];	
 		}
 		else
 		{
-			if (strncmp((*employees)[i].name, name, NAME_SIZE) == 0)
+			if (strncmp(ctx->employees[i].name, name, NAME_SIZE) == 0)
 			{
 				found = true;
 			}
@@ -60,90 +52,86 @@ int del_employee_by_name(struct dbheader_t *dbhdr, struct employee_t **employees
 
 	if(found)
 	{
-		struct employee_t empty_employee = {0};
+		Employee empty_employee = {0};
 		// nullify the struct, not the pointer
-		(*employees)[dbhdr->count-1] = empty_employee;
-		if(dbhdr->count > 0)
+		ctx->employees[ctx->header->count-1] = empty_employee;
+		if(ctx->header->count > 0)
 		{
-			dbhdr->count--;
+			ctx->header->count--;
 		}
 		return STATUS_OK;
 	}
 	else
 	{
-		return STATUS_ERROR;
+		return STATUS_EMPLOYEE_NOT_FOUND;
 	}
 }
 
-int update_employee_hours_by_name(const struct dbheader_t *dbhdr, struct employee_t *employees, const char *name, const int input_hours)
+int update_employee_hours_by_name(DBContext *ctx, const char *name, const int input_hours)
 {
-	if (dbhdr == NULL)
-	{
-		printf("update_employee_hours_by_name: Bad pointer to header struct\n");
-		return STATUS_ERROR;
-	}
-
-	if (employees == NULL)
-	{
-		printf("update_employee_hours_by_name: Bad pointer to employee struct\n");
-		return STATUS_ERROR;
+	StatusCode status = validate_context(ctx, true);
+	if (status != STATUS_OK) {
+		return status;
 	}
 
 	if (name == NULL)
 	{
-		printf("update_employee_hours_by_name: Bad pointer to input char\n");
-		return STATUS_ERROR;
+		printf("ERROR: Bad pointer to input char\n");
+		return STATUS_INVALID_ARGUMENT;
+	}
+
+	if (input_hours < 0)
+	{
+		printf("Error: to update an employee with -u input the hours with flag -v [hours]\n");
+		return STATUS_INVALID_ARGUMENT;
 	}
 
 	size_t len = strnlen(name, NAME_SIZE);
 	int i = 0;
-	for (; i < dbhdr->count; i++)
+	for (; i < ctx->header->count; i++)
 	{
-		if (strncmp(employees[i].name, name, len) == 0)
+		if (strncmp(ctx->employees[i].name, name, len) == 0)
 		{
-			employees[i].hours = input_hours;
+			ctx->employees[i].hours = input_hours;
 			return STATUS_OK;
 		}
 	}
 
-	return STATUS_ERROR;
+	return STATUS_EMPLOYEE_NOT_FOUND;
 }
 
-void list_employees(const struct dbheader_t *dbhdr, const struct employee_t *employees) 
+void list_employees(const DBContext *ctx) 
 {
-	if ( dbhdr-> count == 0)
+	StatusCode status = validate_context(ctx, true);
+	if (status != STATUS_OK) {
+		printf("Invalid database context\n");
+	}
+
+	if ( ctx->header->count == 0)
 	{
 		printf("No employees in file to list\n");
 	}
 	int i = 0;
-	for(; i < dbhdr->count; i++)
+	for(; i < ctx->header->count; i++)
 	{
 		printf("Employee %d\n", i);
-		printf("\tName: %s\n", employees[i].name);
-		printf("\tAddress: %s\n", employees[i].address);
-		printf("\tHours: %d\n", employees[i].hours);
+		printf("\tName: %s\n", ctx->employees[i].name);
+		printf("\tAddress: %s\n", ctx->employees[i].address);
+		printf("\tHours: %d\n", ctx->employees[i].hours);
 	}
 }
 
-int add_employee(struct dbheader_t *dbhdr, struct employee_t **employees, char *addstring) 
+int add_employee(DBContext *ctx, char *addstring) 
 {
-	if (dbhdr == NULL)
-	{
-		printf("add_employee: Bad pointer to header struct\n");
-		return STATUS_ERROR;
+	StatusCode status = validate_context(ctx, true);
+	if (status != STATUS_OK) {
+		return status;
 	}
-
-	if (employees == NULL)
-	{
-		printf("add_employee: Bad pointer to employee struct\n");
-		return STATUS_ERROR;
-	}
-
 
 	if (addstring == NULL)
 	{
-		printf("add_employee: Bad pointer to input char\n");
-		return STATUS_ERROR;
+		printf("Error: Bad pointer to input char\n");
+		return STATUS_INVALID_ARGUMENT;
 	}
 
 	char *name, *address, *hours = NULL;
@@ -154,160 +142,148 @@ int add_employee(struct dbheader_t *dbhdr, struct employee_t **employees, char *
 
 	if (name == NULL || address == NULL || hours == NULL)
 	{
-		printf("add_employee: Malformed input\n");
-		return STATUS_ERROR;
+		printf("Error: Malformed input for add flag. Expected 'name,address,hours'\n");
+		return STATUS_INVALID_ARGUMENT;
 	}
 
-	dbhdr->count++;
-	struct employee_t *tmp_employees_ptr = NULL;
+	ctx->header->count++;
+	Employee *tmp_employees_ptr = NULL;
 
-	tmp_employees_ptr = realloc(*employees, sizeof(struct employee_t) * dbhdr->count);
+	tmp_employees_ptr = realloc(ctx->employees, sizeof(Employee) * ctx->header->count);
 	if (tmp_employees_ptr == NULL)
 	{
 		perror("realloc");
-		return STATUS_ERROR;
+		return STATUS_MEMORY_ERROR;
 	}
-	*employees = tmp_employees_ptr;
+	ctx->employees = tmp_employees_ptr;
 	tmp_employees_ptr = NULL;
 
-	char *name_dest_ptr = strncpy((*employees)[dbhdr->count-1].name, name, sizeof((*employees)[dbhdr->count-1].name)-1);
+	char *name_dest_ptr = strncpy(ctx->employees[ctx->header->count-1].name, name, sizeof(ctx->employees[ctx->header->count-1].name)-1);
 	if (name_dest_ptr == NULL)
 	{
 		printf("add_employee: String copy of name was not successful\n");
 		return STATUS_ERROR;
 	}
-	(*employees)[dbhdr->count-1].name[NAME_SIZE-1] = '\0';
+	ctx->employees[ctx->header->count-1].name[NAME_SIZE-1] = '\0';
 
-	char *addr_dest_ptr = strncpy((*employees)[dbhdr->count-1].address, address, sizeof((*employees)[dbhdr->count-1].address)-1);
+	char *addr_dest_ptr = strncpy(ctx->employees[ctx->header->count-1].address, address, sizeof(ctx->employees[ctx->header->count-1].address)-1);
 	if (addr_dest_ptr == NULL)
 	{
 		printf("add_employee: String copy of address was not successful\n");
 		return STATUS_ERROR;
 	}
-	(*employees)[dbhdr->count-1].address[ADDRESS_SIZE-1] = '\0';
+	ctx->employees[ctx->header->count-1].address[ADDRESS_SIZE-1] = '\0';
 	
-	(*employees)[dbhdr->count-1].hours = atoi(hours);
+	ctx->employees[ctx->header->count-1].hours = atoi(hours);
 
 	return STATUS_OK;
 }
 
-int read_employees(int fd, const struct dbheader_t *dbhdr, struct employee_t **employeesOut) 
+int read_employees(DBContext *ctx) 
 {
-	if (fd <= 0) 
-	{
-		printf("read_employees: Invalid file descriptor\n");
-		return STATUS_ERROR;
+	StatusCode status = validate_context(ctx, false);
+	if (status != STATUS_OK) {
+		return status;
 	}
 
-	if (dbhdr == NULL)
+	if (ctx->db_fd <= 0) 
 	{
-		printf("read_employees: Got bad pointer to header structi\n");
-		return STATUS_ERROR;
+		printf("Error: Invalid file descriptor\n");
+		return STATUS_INVALID_ARGUMENT;
 	}
 
-	if (employeesOut == NULL)
-	{
-		printf("read_employees: Got NULL pointer for employees\n");
-		return STATUS_ERROR;
-	}
-
-	struct employee_t *tmp_employees_ptr = calloc(dbhdr->count, sizeof(struct employee_t));
+	Employee *tmp_employees_ptr = calloc(ctx->header->count, sizeof(Employee));
 	if (tmp_employees_ptr == NULL)
 	{
 		perror("calloc");
-		return STATUS_ERROR;
+		return STATUS_MEMORY_ERROR;
 	}
 
-	int seek_bytes = lseek(fd, sizeof(struct dbheader_t), SEEK_SET);
+	int seek_bytes = lseek(ctx->db_fd, sizeof(DBHeader), SEEK_SET);
 
 	if (seek_bytes == STATUS_ERROR)
 	{
 		perror("lseek");
 		free(tmp_employees_ptr);
-		return STATUS_ERROR;
+		return STATUS_SEEK_ERROR;
 	}
 	
 	int i = 0;
-	for(; i < dbhdr->count; i++)
+	for(; i < ctx->header->count; i++)
 	{
-		int bytes_read = read(fd, &tmp_employees_ptr[i], sizeof(struct employee_t));
+		int bytes_read = read(ctx->db_fd, &tmp_employees_ptr[i], sizeof(Employee));
 		if (bytes_read == STATUS_ERROR)
 		{
 			perror("read");
 			free(tmp_employees_ptr);
-			return STATUS_ERROR;
+			return STATUS_READ_ERROR;
 		}
-		tmp_employees_ptr[i].hours = ntohl(tmp_employees_ptr[i].hours);
+		tmp_employees_ptr[i].hours = convert_uint(tmp_employees_ptr[i].hours, false);
 		//TODO: when reading convert everything back once we modify so that everything is bigendian
 	}
 
-	*employeesOut = tmp_employees_ptr;
+	ctx->employees = tmp_employees_ptr;
+	tmp_employees_ptr = NULL;
+
 	return STATUS_OK;
 }
 
-int output_file(int fd, struct dbheader_t *dbhdr, struct employee_t *employees) 
+int output_file(DBContext *ctx) 
 {
-	if (fd <= 0) 
-	{
-		printf("output_file: Invalid file descriptor\n");
-		return STATUS_ERROR;
+	StatusCode status = validate_context(ctx, false);
+	if (status != STATUS_OK) {
+		return status;
 	}
-
-	if (dbhdr == NULL)
+	if (ctx->db_fd <= 0) 
 	{
-		printf("output_file: Got bad pointer to header structi\n");
-		return STATUS_ERROR;
-	}
-
-	if (employees == NULL)
-	{
-		printf("Writing empty database file\n");
+		printf("Error: Invalid file descriptor\n");
+		return STATUS_INVALID_ARGUMENT;
 	}
 	
-	int seek_bytes = lseek(fd, 0, SEEK_SET);
+	int seek_bytes = lseek(ctx->db_fd, 0, SEEK_SET);
 	if (seek_bytes == STATUS_ERROR)
 	{
 		perror("lseek");
-		return STATUS_ERROR;
+		return STATUS_SEEK_ERROR;
 	}
 
-	dbhdr->magic = htonl(DB_MAGIC);
-	dbhdr->version = htons(DB_CURRENT_VERSION);
-	size_t new_file_size = sizeof(struct dbheader_t) + (dbhdr->count * sizeof(struct employee_t));
-	dbhdr->filesize = htonl(new_file_size);
-	unsigned short realcount = dbhdr->count;	
-	dbhdr->count = htons(dbhdr->count);
+	ctx->header->magic = convert_uint(DB_MAGIC, true);
+	ctx->header->version = convert_ushort(DB_CURRENT_VERSION, true);
+	size_t new_file_size = sizeof(DBHeader) + (ctx->header->count * sizeof(Employee));
+	ctx->header->filesize = convert_uint(new_file_size, true);
+	unsigned short realcount = ctx->header->count;	
+	ctx->header->count = convert_ushort(ctx->header->count, true);
 	
-	int write_bytes = write(fd, dbhdr, sizeof(struct dbheader_t));
+	int write_bytes = write(ctx->db_fd, ctx->header, sizeof(DBHeader));
 	if (write_bytes == STATUS_ERROR)
 	{
 		perror("write");
-		return STATUS_ERROR;
+		return STATUS_WRITE_ERROR;
 	}
-	seek_bytes = lseek(fd, sizeof(struct dbheader_t), SEEK_SET);
+	seek_bytes = lseek(ctx->db_fd, sizeof(DBHeader), SEEK_SET);
 	if (seek_bytes == STATUS_ERROR)
 	{
 		perror("lseek");
-		return STATUS_ERROR;
+		return STATUS_SEEK_ERROR;
 	}
 
-	if(employees)
+	if(ctx->employees)
 	{
 		int i = 0;
 		for (; i < realcount; i++)
 		{
-			employees[i].hours = htonl(employees[i].hours);
+			ctx->employees[i].hours = convert_uint(ctx->employees[i].hours, true);
 			// convert the rest of them after testing
-			int write_bytes = write(fd, &employees[i], sizeof(struct employee_t));
+			int write_bytes = write(ctx->db_fd, &(ctx->employees[i]), sizeof(Employee));
 			if (write_bytes == STATUS_ERROR)
 			{
 				perror("write");
-				return STATUS_ERROR;
+				return STATUS_WRITE_ERROR;
 			}
 		}
 	}
 	
-    if (ftruncate(fd, new_file_size) == -1) {
+    if (ftruncate(ctx->db_fd, new_file_size) == -1) {
         perror("ftruncate");
         return STATUS_ERROR;
     }
@@ -315,82 +291,101 @@ int output_file(int fd, struct dbheader_t *dbhdr, struct employee_t *employees)
 	return STATUS_OK;
 }	
 
-int validate_db_header(int fd, struct dbheader_t **headerOut) 
+int validate_db_header(DBContext *ctx) 
 {
-	struct dbheader_t *header = calloc(1, sizeof(struct dbheader_t));
+	if (ctx == NULL)
+	{
+		printf("Error: Bad pointer to DBContext");
+		return STATUS_INVALID_ARGUMENT;
+	}
+	DBHeader *header = calloc(1, sizeof(DBHeader));
 	if (header == NULL) 
 	{
 		perror("calloc");
-		return STATUS_ERROR;
+		return STATUS_MEMORY_ERROR;
 	}
 
-	ssize_t bytes = read(fd, header, sizeof(struct dbheader_t));
+	int seek_bytes = lseek(ctx->db_fd, 0, SEEK_SET);
+	if (seek_bytes == STATUS_ERROR)
+	{
+		perror("lseek");
+		return STATUS_SEEK_ERROR;
+	}
+
+	ssize_t bytes = read(ctx->db_fd, header, sizeof(DBHeader));
 	if (bytes == -1) 
 	{
 		perror("read");
 		free(header);
-		return STATUS_ERROR;
+		return STATUS_READ_ERROR;
 	}
 	else if (bytes == 0) 
 	{
-		printf("validate_db_header: No bytes read\n");
-		return STATUS_ERROR;
+		printf("Error: No bytes read\n");
+		return STATUS_READ_ERROR;
 	}
-	else if (bytes != sizeof(struct dbheader_t)) 
+	else if (bytes != sizeof(DBHeader)) 
 	{
-		printf("validate_db_header: Not enough bytes read\n");
+		printf("Error: Not enough bytes read\n");
 		free(header);
-		return STATUS_ERROR;
+		return STATUS_WRITE_ERROR;
 	}
 
-	header->magic = ntohl(header->magic);
-	header->version = ntohs(header->version);
-	header->count = ntohs(header->count);
-	header->filesize = ntohl(header->filesize);
+	header->magic = convert_uint(header->magic, false);
+	header->version = convert_ushort(header->version, false);
+	header->count = convert_ushort(header->count, false);
+	header->filesize = convert_uint(header->filesize, false);
 
 	if (header->magic != DB_MAGIC) 
 	{
-		printf("validate_db_header: Magic number mismatch\n");
+		printf("Error: Magic number mismatch\n");
 		free(header);
-		return STATUS_ERROR;
+		return STATUS_DB_CORRUPTED;
 	}
 	if (header->version != DB_CURRENT_VERSION) 
 	{
-		printf("validate_db_header: Version mismatch\n");
+		printf("Error: Version mismatch\n");
 		free(header);
-		return STATUS_ERROR;
+		return STATUS_DB_CORRUPTED;
 	}
 
 	struct stat db_stat = {0};
-	fstat(fd, &db_stat);
+	fstat(ctx->db_fd, &db_stat);
 
 	if (header->filesize != db_stat.st_size) 
 	{
-		printf("validate_db_header: File size mismatch\n");
+		printf("Error: File size mismatch\n");
 		free(header);
-		return STATUS_ERROR;
+		return STATUS_DB_CORRUPTED;
 	}
 
-	*headerOut = header;
+	ctx->header = header;
+	header = NULL;
 	return STATUS_OK;
 
 }
 
-int create_db_header(const int fd, struct dbheader_t **headerOut) 
+int create_db_header(DBContext *ctx) 
 {
-	struct dbheader_t *header = calloc(1, sizeof(struct dbheader_t));
+	if (ctx == NULL)
+	{
+		printf("Error: Bad pointer to DBContext");
+		return STATUS_INVALID_ARGUMENT;
+	}
+	DBHeader *header = calloc(1, sizeof(DBHeader));
 	if (header == NULL) 
 	{
 		perror("calloc");
-		return STATUS_ERROR;
+		return STATUS_MEMORY_ERROR;
 	}
 
 	header->magic = DB_MAGIC;
 	header->version = DB_CURRENT_VERSION;
 	header->count = 0;
-	header->filesize = sizeof(struct dbheader_t);
+	header->filesize = sizeof(DBHeader);
 	
-	*headerOut = header;
+	ctx->header = header;
+	header == NULL;
 	return STATUS_OK;
 }
 
