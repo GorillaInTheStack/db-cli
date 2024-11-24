@@ -30,8 +30,23 @@ bin/tests/%: tests/%.c
 
 tests: $(TEST_BIN)
 
-test: tests
-	@for test_bin in $(TEST_BIN); do \
-		echo "Running $$test_bin"; \
-		$$test_bin || exit 1; \
-		done
+test: clean tests
+	@total=0; \
+	passed=0; \
+	failed=0; \
+	for test_bin in $(TEST_BIN); do \
+		echo "############################## Running $$test_bin ##############################"; \
+		if $$test_bin; then \
+			echo "############################## $$test_bin PASSED ##############################"; \
+			passed=$$((passed + 1)); \
+		else \
+			echo "############################## $$test_bin FAILED ##############################"; \
+			failed=$$((failed + 1)); \
+		fi; \
+		total=$$((total + 1)); \
+	done; \
+	echo "############################## SUMMARY ##############################"; \
+	echo "Total Tests Files: $$total"; \
+	echo "Passed: $$passed"; \
+	echo "Failed: $$failed"; \
+	if [ $$failed -ne 0 ]; then exit 1; fi
