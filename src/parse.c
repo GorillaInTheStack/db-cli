@@ -295,7 +295,7 @@ int validate_db_header(DBContext *ctx)
 {
 	if (ctx == NULL)
 	{
-		printf("Error: Bad pointer to DBContext");
+		printf("Error: Bad pointer to DBContext\n");
 		return STATUS_INVALID_ARGUMENT;
 	}
 	DBHeader *header = calloc(1, sizeof(DBHeader));
@@ -369,7 +369,7 @@ int create_db_header(DBContext *ctx)
 {
 	if (ctx == NULL)
 	{
-		printf("Error: Bad pointer to DBContext");
+		printf("Error: Bad pointer to DBContext\n");
 		return STATUS_INVALID_ARGUMENT;
 	}
 	DBHeader *header = calloc(1, sizeof(DBHeader));

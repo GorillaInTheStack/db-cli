@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <unistd.h>
+#include <string.h>
 
 #include "context.h"
 #include "file.h"
@@ -35,33 +36,47 @@ int process_arguments(int argc, char *argv[])
 	ctx.db_fd = -1;
 
 	int status = STATUS_OK;
-	
+
 	// Prologue
-	while ((c= getopt(argc, argv, "nf:a:ld:u:v:")) != -1) 
-	{
-			switch(c)
-			{
+	while ((c = getopt(argc, argv, "nf:a:ld:u:v:")) != -1) {
+		switch (c) {
 			case 'n':
 				opts.newfile = true;
 				break;
 			case 'f':
-				opts.filepath = optarg;
+				// we should not depend on optarg address after getopt returns
+				// as it may be overwritten by subsequent calls (during tests) to getopt
+				// so we copy the string to a new memory location
+				opts.filepath = strndup(optarg, DB_INPUT_MAX_SIZE-2);
+				if (!opts.filepath) {
+					perror("strdup failed for filepath");
+					return STATUS_MEMORY_ERROR;
+				}
 				break;
 			case 'a':
-				opts.newinput = optarg;
-				opts.newinput[DB_INPUT_MAX_SIZE-1] = '\0';
+				opts.newinput = strndup(optarg, DB_INPUT_MAX_SIZE-2);
+				if (!opts.newinput) {
+					perror("strdup failed for newinput");
+					return STATUS_MEMORY_ERROR;
+				}
 				break;
 			case 'l':
 				opts.ls_employees = true;
 				break;
 			case 'd':
-				opts.search_name = optarg;
-				opts.search_name[NAME_SIZE-1] = '\0';
+				opts.search_name = strndup(optarg, DB_INPUT_MAX_SIZE-2);
+				if (!opts.search_name) {
+					perror("strdup failed for search_name");
+					return STATUS_MEMORY_ERROR;
+				}
 				opts.del = true;
 				break;
 			case 'u':
-				opts.search_name = optarg;
-				opts.search_name[NAME_SIZE-1] = '\0';
+				opts.search_name = strndup(optarg, DB_INPUT_MAX_SIZE-2);
+				if (!opts.search_name) {
+					perror("strdup failed for search_name");
+					return STATUS_MEMORY_ERROR;
+				}
 				opts.update = true;
 				break;
 			case 'v':
@@ -74,10 +89,10 @@ int process_arguments(int argc, char *argv[])
 			default:
 				perror("getopt");
 				return STATUS_INVALID_ARGUMENT;
-			}
+		}
 	}
 
-	if(!opts.filepath){
+	if(opts.filepath == NULL){
 		printf("Path is a required argument\n");
 		print_usage(argv);
 		return STATUS_FILE_NOT_FOUND;
@@ -111,7 +126,6 @@ int process_arguments(int argc, char *argv[])
 	    	status = read_employees(&ctx);
 		}
 	}	
-
 
 	// State change operations
 	if (status == STATUS_OK && opts.newinput)
@@ -160,5 +174,10 @@ int process_arguments(int argc, char *argv[])
 	}
 
 	cleanup_context(&ctx);
+
+	if (opts.filepath) free(opts.filepath);
+	if (opts.newinput) free(opts.newinput);
+	if (opts.search_name) free(opts.search_name);
+
 	return status;
 }

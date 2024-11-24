@@ -4,6 +4,7 @@
 #define DB_MAGIC 0x4c4c4144
 #define DB_CURRENT_VERSION 0x1
 
+#include "context.h"
 
 	/**
 	 * @brief create the header struct and populate it with initial values 

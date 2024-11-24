@@ -73,4 +73,3 @@ const char* status_message(StatusCode status) {
             return "Unknown status code.";
     }
 }
-
