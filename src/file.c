@@ -18,6 +18,11 @@ StatusCode create_db_file(const char *filename, int *fd) {
         return STATUS_INVALID_ARGUMENT;
     }
 
+    struct stat file_stat;
+    if (lstat(filename, &file_stat) == 0 && S_ISLNK(file_stat.st_mode)) {
+        return STATUS_INVALID_ARGUMENT;
+    }
+
     int tmp_fd = open(filename, O_RDWR, 0644);
     if (tmp_fd != -1) {
         close(tmp_fd);
@@ -40,6 +45,11 @@ StatusCode open_db_file(const char *filename, int *fd) {
     }
 
     if (strstr(filename, "../") != NULL) {
+        return STATUS_INVALID_ARGUMENT;
+    }
+
+    struct stat file_stat;
+    if (lstat(filename, &file_stat) == 0 && S_ISLNK(file_stat.st_mode)) {
         return STATUS_INVALID_ARGUMENT;
     }
 

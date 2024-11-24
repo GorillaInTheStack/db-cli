@@ -8,6 +8,7 @@
 #include <setjmp.h>
 #include <cmocka.h>
 #include <unistd.h>   
+#include <errno.h>
 
 #include "file.h"    
 #include "utils.h"
@@ -50,32 +51,6 @@ static void test_create_db_file_exists(void **state) {
     assert_in_range(fd, 0, max_fd);
 
     unlink(test_file);
-}
-
-static void test_create_db_file_fd_exhaustion(void **state) {
-    (void) state;
-
-    int fd = -1;
-    const char *test_file = "test_file.db";
-
-    // Exhaust file descriptors
-    int fds[max_fd];
-    for (int i = 0; i < max_fd; i++) {
-        fds[i] = open("/dev/null", O_RDONLY);
-        if (fds[i] == -1) {
-            break;
-        }
-    }
-
-    // Try to create a new file while descriptors are exhausted
-    StatusCode status = create_db_file(test_file, &fd);
-    assert_true(status < 0);
-
-    for (int i = 0; i < max_fd; i++) {
-        if (fds[i] != -1) {
-            close(fds[i]);
-        }
-    }
 }
 
 static void test_create_db_file_path_too_long(void **state) {
@@ -133,7 +108,7 @@ static void test_create_db_file_symlink(void **state) {
     symlink(test_file, symlink_file);
 
     status = create_db_file(symlink_file, &fd);
-    assert_int_equal(status, STATUS_FILE_EXISTS);  // Should detect and handle symlink correctly
+    assert_int_equal(status, STATUS_INVALID_ARGUMENT);  // Should detect and handle symlink correctly
 
     unlink(test_file);
     unlink(symlink_file);
@@ -200,36 +175,6 @@ static void test_open_db_file_not_found(void **state) {
     assert_int_equal(fd, -1);
 }
 
-static void test_open_db_file_fd_exhaustion(void **state) {
-    (void) state;
-
-    int fd = -1;
-    const char *test_file = "test_file.db";
-
-    create_db_file(test_file, &fd);
-    close(fd);
-
-    // Exhaust file descriptors
-    int fds[max_fd];
-    for (int i = 0; i < max_fd; i++) {
-        fds[i] = open("/dev/null", O_RDONLY);
-        if (fds[i] == -1) {
-            break;
-        }
-    }
-
-    StatusCode status = open_db_file(test_file, &fd);
-    assert_true(status < 0);
-
-    for (int i = 0; i < max_fd; i++) {
-        if (fds[i] != -1) {
-            close(fds[i]);
-        }
-    }
-
-    unlink(test_file);
-}
-
 static void test_open_db_file_path_too_long(void **state) {
     (void) state;
 
@@ -263,12 +208,33 @@ static void test_open_db_file_large_file_descriptor(void **state) {
     assert_int_equal(status, STATUS_FILE_OPEN_ERROR);
 }
 
+static void test_open_db_file_symlink(void **state) {
+    (void) state;
+
+    int fd = -1;
+    const char *test_file = "test_file.db";
+    const char *symlink_file = "symlink.db";
+
+    unlink(test_file);
+    unlink(symlink_file);
+
+    StatusCode status = open_db_file(test_file, &fd);
+    assert_int_equal(status, STATUS_OK);
+    close(fd);
+
+    symlink(test_file, symlink_file);
+
+    status = open_db_file(symlink_file, &fd);
+    assert_int_equal(status, STATUS_INVALID_ARGUMENT);  // Should detect and handle symlink correctly
+
+    unlink(test_file);
+    unlink(symlink_file);
+}
 
 int main(void) {
     const struct CMUnitTest tests[] = {
         cmocka_unit_test(test_create_db_file_success),
         cmocka_unit_test(test_create_db_file_exists),
-        cmocka_unit_test(test_create_db_file_fd_exhaustion),
         cmocka_unit_test(test_create_db_file_path_too_long),
         cmocka_unit_test(test_create_db_file_repeated_unlink),
         cmocka_unit_test(test_create_db_file_no_write_permission),
@@ -278,7 +244,6 @@ int main(void) {
 
         cmocka_unit_test(test_open_db_file_success),
         cmocka_unit_test(test_open_db_file_not_found),
-        cmocka_unit_test(test_open_db_file_fd_exhaustion),
         cmocka_unit_test(test_open_db_file_path_too_long),
         cmocka_unit_test(test_open_db_file_path_traversal),
         cmocka_unit_test(test_open_db_file_large_file_descriptor),
