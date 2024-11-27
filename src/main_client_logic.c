@@ -6,7 +6,7 @@ StatusCode start_client(int argc, char *argv[])
 {
     if (argc < 2)
     {
-        printf("Usage: %s <server ip>\n");
+        printf("Usage: %s <server ip>\n", argv[0]);
         return STATUS_OK;
     }
 

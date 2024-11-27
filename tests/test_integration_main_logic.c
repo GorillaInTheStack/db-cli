@@ -8,7 +8,7 @@
 #include <string.h>
 #include <getopt.h>
 
-#include "main_logic.h"
+#include "main_cli_logic.h"
 #include "context.h"
 #include "file.h"
 #include "parse.h"

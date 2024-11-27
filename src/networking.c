@@ -1,4 +1,3 @@
-
 #include "networking.h"
 
 StatusCode create_server_socket(int *serverSocket)
@@ -29,7 +28,7 @@ StatusCode create_server_socket(int *serverSocket)
     return STATUS_OK;
 }
 
-StatusCode bind_listen_server_socket(const int *serverSocket)
+StatusCode bind_listen_server_socket(int *serverSocket)
 {
     if (!serverSocket){
         printf("Error: serverSocket pointer is null\n");
@@ -41,14 +40,14 @@ StatusCode bind_listen_server_socket(const int *serverSocket)
     serverAddress.sin_addr.s_addr = INADDR_ANY;
     serverAddress.sin_port = convert_ushort(PORT, true);
 
-    int ret = bind(serverSocket, (struct sockaddr *)&serverAddress, sizeof(serverAddress));
+    int ret = bind(*serverSocket, (struct sockaddr *)&serverAddress, sizeof(serverAddress));
 
     if (ret == -1) {
         perror("bind");
         return STATUS_ERROR;
     }
 
-    ret = listen(serverSocket, BACKLOG);
+    ret = listen(*serverSocket, BACKLOG);
 
     if (ret == -1) {
         perror("listen");
@@ -58,7 +57,7 @@ StatusCode bind_listen_server_socket(const int *serverSocket)
     return STATUS_OK;
 }
 
-StatusCode accept_clients(const int *serverSocket, int *clientSocket)
+StatusCode accept_clients(int *serverSocket, int *clientSocket)
 {
     if (!serverSocket || !clientSocket){
         printf("Error: accept_clients got invalid args\n");
@@ -67,7 +66,7 @@ StatusCode accept_clients(const int *serverSocket, int *clientSocket)
 
     struct sockaddr_in tmpClientAddress = {0};
     socklen_t clientAddrLen = sizeof(tmpClientAddress);
-    int tmpClientSocket = accept(serverSocket, (struct sockaddr *)&tmpClientAddress, &clientAddrLen);
+    int tmpClientSocket = accept(*serverSocket, (struct sockaddr *)&tmpClientAddress, &clientAddrLen);
 
     if (tmpClientSocket == -1) {
         perror("accept");
@@ -76,7 +75,8 @@ StatusCode accept_clients(const int *serverSocket, int *clientSocket)
     }
 
     *clientSocket = tmpClientSocket;
-    printf("Accepted connection from client %s:%s", inet_ntoa(tmpClientAddress.sin_addr), convert_ushort(tmpClientAddress.sin_port, false));
+    printf("Accepted connection from client %s:%d\n", inet_ntoa(tmpClientAddress.sin_addr), convert_ushort(tmpClientAddress.sin_port, false));
+
     return STATUS_OK;
 }
 

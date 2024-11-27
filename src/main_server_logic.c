@@ -1,4 +1,5 @@
 #include <unistd.h>
+#include <string.h>
 
 #include "networking.h"
 
@@ -32,7 +33,7 @@ StatusCode start_server(int argc, char *argv[])
         }
         char *str = "Hello World\n";
 
-        write(clientSocket, str, sizeof(str));
+        write(clientSocket, str, strlen(str));
         close(clientSocket);
     }
 

@@ -2,6 +2,8 @@
 #define NETWORKING_H
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <unistd.h>
+#include <stdio.h>
 
 #include "common.h"
 
@@ -10,9 +12,9 @@
 
 StatusCode create_server_socket(int *serverSocket);
 
-StatusCode bind_listen_server_socket(const int *serverSocket);
+StatusCode bind_listen_server_socket(int *serverSocket);
 
-StatusCode accept_clients(const int *serverSocket, int *clientSocket);
+StatusCode accept_clients(int *serverSocket, int *clientSocket);
 
 StatusCode create_conn_client_socket(int *client_socket, const char *ip, const int port);
 

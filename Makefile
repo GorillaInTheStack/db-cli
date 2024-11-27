@@ -1,40 +1,47 @@
-TARGET = bin/dbview
-SRC = $(wildcard src/*.c)
-OBJ = $(patsubst src/%.c, obj/%.o, $(SRC))
+CLI_TARGET = bin/db_cli
+SERVER_TARGET = bin/db_server
+CLIENT_TARGET = bin/db_client
 
-TEST_SRC = $(wildcard tests/*.c)
-TEST_BIN = $(patsubst tests/%.c, bin/tests/%, $(TEST_SRC))
+COMMON_OBJS = obj/context.o obj/file.o obj/networking.o obj/parse.o obj/utils.o
+CLI_OBJS = obj/main_cli.o obj/main_cli_logic.o $(COMMON_OBJS)
+SERVER_OBJS = obj/main_server.o obj/main_server_logic.o $(COMMON_OBJS)
+CLIENT_OBJS = obj/main_client.o obj/main_client_logic.o $(COMMON_OBJS)
+
+TESTS = $(wildcard tests/*.c)
+TEST_BINS = $(patsubst tests/%.c, bin/tests/%, $(TESTS))
+
 CFLAGS += -Iinclude
 LDFLAGS += -lcmocka
 
-run: clean default
-	./$(TARGET) -f ./mynewdb.db -n 
-	./$(TARGET) -f ./mynewdb.db -a "Timmy H.,123 Sheshire Ln.,120"
+all: $(CLI_TARGET) $(SERVER_TARGET) $(CLIENT_TARGET)
 
-default: $(TARGET)
+$(CLI_TARGET): $(CLI_OBJS)
+	mkdir -p bin
+	gcc -o $@ $^
 
-clean:
-	rm -f obj/*.o
-	rm -f $(TARGET)
-	rm -f *.db
-	rm -f bin/tests/*
+$(SERVER_TARGET): $(SERVER_OBJS)
+	mkdir -p bin
+	gcc -o $@ $^
 
-$(TARGET): $(OBJ)
-	gcc -o $@ $?
+$(CLIENT_TARGET): $(CLIENT_OBJS)
+	mkdir -p bin
+	gcc -o $@ $^
 
-obj/%.o : src/%.c
-	gcc -c -g $< -o $@ -Iinclude
+obj/%.o: src/%.c
+	mkdir -p obj
+	gcc -c -g $< -o $@ $(CFLAGS)
 
 bin/tests/%: tests/%.c
-	gcc $(CFLAGS) -o $@ $< $(filter-out src/main.c, $(SRC)) $(LDFLAGS)
+	mkdir -p bin/tests
+	gcc $(CFLAGS) -o $@ $< obj/main_cli_logic.o $(COMMON_OBJS) $(LDFLAGS)
 
-tests: $(TEST_BIN)
+tests: $(TEST_BINS)
 
-test: clean tests
+test: tests
 	@total=0; \
 	passed=0; \
 	failed=0; \
-	for test_bin in $(TEST_BIN); do \
+	for test_bin in $(TEST_BINS); do \
 		echo "############################## Running $$test_bin ##############################"; \
 		if $$test_bin; then \
 			echo "############################## $$test_bin PASSED ##############################"; \
@@ -50,3 +57,6 @@ test: clean tests
 	echo "Passed: $$passed"; \
 	echo "Failed: $$failed"; \
 	if [ $$failed -ne 0 ]; then exit 1; fi
+
+clean:
+	rm -rf obj/*.o bin/* *.db
