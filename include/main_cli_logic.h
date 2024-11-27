@@ -1,3 +1,5 @@
+#ifndef MAIN_CLI_LOGIC_H
+#define FILE_H
 
 /**
  * @brief prints out the CLI app usage message
@@ -15,3 +17,5 @@ void print_usage(char *argv[]);
  * @return int -> StatusCode
  */
 int process_arguments(int argc, char *argv[]);
+
+#endif
