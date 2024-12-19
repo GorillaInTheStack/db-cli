@@ -7,8 +7,8 @@
 
 #include "common.h"
 
-#define PORT 7777
-#define BACKLOG 4024
+#define PORT 1337
+#define BACKLOG 1000
 
 StatusCode create_server_socket(int *serverSocket);
 

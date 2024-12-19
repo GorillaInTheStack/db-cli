@@ -2,14 +2,16 @@
 
 StatusCode create_server_socket(int *serverSocket)
 {
-    if (!serverSocket){
+    if (!serverSocket)
+    {
         printf("Error: serverSocket pointer is null\n");
         return STATUS_INVALID_ARGUMENT;
     }
 
     int tmpServerSocket = socket(AF_INET, SOCK_STREAM, 0);
 
-    if (tmpServerSocket == -1) {
+    if (tmpServerSocket == -1)
+    {
         perror("socket");
         close(tmpServerSocket);
         return STATUS_ERROR;
@@ -18,7 +20,8 @@ StatusCode create_server_socket(int *serverSocket)
     int opt = 1;
     int ret = setsockopt(tmpServerSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(int));
 
-    if (ret == -1) {
+    if (ret == -1)
+    {
         perror("setsockopt");
         close(tmpServerSocket);
         return STATUS_ERROR;
@@ -30,7 +33,8 @@ StatusCode create_server_socket(int *serverSocket)
 
 StatusCode bind_listen_server_socket(int *serverSocket)
 {
-    if (!serverSocket){
+    if (!serverSocket)
+    {
         printf("Error: serverSocket pointer is null\n");
         return STATUS_INVALID_ARGUMENT;
     }
@@ -42,14 +46,17 @@ StatusCode bind_listen_server_socket(int *serverSocket)
 
     int ret = bind(*serverSocket, (struct sockaddr *)&serverAddress, sizeof(serverAddress));
 
-    if (ret == -1) {
+    if (ret == -1)
+    {
         perror("bind");
         return STATUS_ERROR;
     }
+    printf("Server socket successfuly bound to port %d\n", PORT);
 
     ret = listen(*serverSocket, BACKLOG);
 
-    if (ret == -1) {
+    if (ret == -1)
+    {
         perror("listen");
         return STATUS_ERROR;
     }
@@ -59,7 +66,8 @@ StatusCode bind_listen_server_socket(int *serverSocket)
 
 StatusCode accept_clients(int *serverSocket, int *clientSocket)
 {
-    if (!serverSocket || !clientSocket){
+    if (!serverSocket || !clientSocket)
+    {
         printf("Error: accept_clients got invalid args\n");
         return STATUS_INVALID_ARGUMENT;
     }
@@ -68,7 +76,8 @@ StatusCode accept_clients(int *serverSocket, int *clientSocket)
     socklen_t clientAddrLen = sizeof(tmpClientAddress);
     int tmpClientSocket = accept(*serverSocket, (struct sockaddr *)&tmpClientAddress, &clientAddrLen);
 
-    if (tmpClientSocket == -1) {
+    if (tmpClientSocket == -1)
+    {
         perror("accept");
         close(tmpClientSocket);
         return STATUS_ERROR;
@@ -82,7 +91,8 @@ StatusCode accept_clients(int *serverSocket, int *clientSocket)
 
 StatusCode create_conn_client_socket(int *client_socket, const char *ip, const int port)
 {
-    if (!client_socket || !ip || port <= 0){
+    if (!client_socket || !ip || port <= 0)
+    {
         printf("Error: create_client_socket got invalid args\n");
         return STATUS_INVALID_ARGUMENT;
     }
@@ -96,13 +106,15 @@ StatusCode create_conn_client_socket(int *client_socket, const char *ip, const i
 
     int ret = connect(tmpClientSocket, (struct sockaddr *)&serverInfo, sizeof(serverInfo));
 
-    if (ret == -1) {
+    if (ret == -1)
+    {
         perror("connect");
         close(tmpClientSocket);
         return STATUS_ERROR;
     }
 
-    if (tmpClientSocket == -1) {
+    if (tmpClientSocket == -1)
+    {
         perror("socket");
         close(tmpClientSocket);
         return STATUS_ERROR;
@@ -110,7 +122,6 @@ StatusCode create_conn_client_socket(int *client_socket, const char *ip, const i
 
     *client_socket = tmpClientSocket;
     return STATUS_OK;
-
 }
 
 StatusCode send_data(int socket, const void *data, size_t size)
