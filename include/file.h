@@ -8,7 +8,7 @@
  *
  * @param filename: char*
  *
- * @return 
+ * @return
  * 		- STATUS_OK if successful
  * 		- STATUS_ERROR if not successful
  */
@@ -19,7 +19,7 @@ StatusCode create_db_file(const char *filename, int *fd);
  *
  * @param filename: char*
  *
- * @return 
+ * @return
  *		- fd if successful
  *		- STATUS_ERROR if not successful
  */

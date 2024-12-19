@@ -11,8 +11,9 @@
 
 #include "parse.h"
 
-static void test_create_db_header_success(void **state) {
-    (void) state;
+static void test_create_db_header_success(void **state)
+{
+    (void)state;
 
     DBContext ctx = {0};
     int fd = open("test_db_file.db", O_CREAT | O_RDWR, 0644);
@@ -28,15 +29,17 @@ static void test_create_db_header_success(void **state) {
     unlink("test_db_file.db");
 }
 
-static void test_create_db_header_null_context(void **state) {
-    (void) state;
+static void test_create_db_header_null_context(void **state)
+{
+    (void)state;
 
     StatusCode status = create_db_header(NULL);
     assert_int_equal(status, STATUS_INVALID_ARGUMENT);
 }
 
-static void test_validate_db_header_success(void **state) {
-    (void) state;
+static void test_validate_db_header_success(void **state)
+{
+    (void)state;
 
     DBContext ctx = {0};
     int fd = open("test_db_file.db", O_CREAT | O_RDWR, 0644);
@@ -54,8 +57,9 @@ static void test_validate_db_header_success(void **state) {
     unlink("test_db_file.db");
 }
 
-static void test_validate_db_header_corrupted(void **state) {
-    (void) state;
+static void test_validate_db_header_corrupted(void **state)
+{
+    (void)state;
 
     DBContext ctx = {0};
     int fd = open("test_db_file.db", O_CREAT | O_RDWR, 0644);
@@ -64,7 +68,7 @@ static void test_validate_db_header_corrupted(void **state) {
     ctx.db_fd = fd;
     create_db_header(&ctx);
 
-    ctx.header->magic = 0;  // Corrupt the magic number
+    ctx.header->magic = 0; // Corrupt the magic number
     lseek(fd, 0, SEEK_SET);
     write(fd, ctx.header, sizeof(DBHeader));
 
@@ -75,14 +79,14 @@ static void test_validate_db_header_corrupted(void **state) {
     unlink("test_db_file.db");
 }
 
-static void test_add_employee_success(void **state) {
-    (void) state;
+static void test_add_employee_success(void **state)
+{
+    (void)state;
 
     DBContext ctx = {
         .db_fd = -1,
         .header = malloc(sizeof(DBHeader)),
-        .employees = malloc(2 * sizeof(Employee))
-    };
+        .employees = malloc(2 * sizeof(Employee))};
     create_db_header(&ctx);
 
     char add_string[] = "John Doe,123 Main St,40";
@@ -98,27 +102,28 @@ static void test_add_employee_success(void **state) {
     cleanup_context(&ctx);
 }
 
-static void test_add_employee_malformed_input(void **state) {
-    (void) state;
+static void test_add_employee_malformed_input(void **state)
+{
+    (void)state;
 
     DBContext ctx = {0};
     create_db_header(&ctx);
 
-    char add_string[] = "John Doe,123 Main St";  // Missing hours
+    char add_string[] = "John Doe,123 Main St"; // Missing hours
     StatusCode status = add_employee(&ctx, add_string);
     assert_int_equal(status, STATUS_INVALID_ARGUMENT);
 
     cleanup_context(&ctx);
 }
 
-static void test_del_employee_by_name_found(void **state) {
-    (void) state;
+static void test_del_employee_by_name_found(void **state)
+{
+    (void)state;
 
     DBContext ctx = {
         .db_fd = -1,
         .header = malloc(sizeof(DBHeader)),
-        .employees = malloc(2 * sizeof(Employee))
-    };
+        .employees = malloc(2 * sizeof(Employee))};
     create_db_header(&ctx);
 
     char add_string[] = "John Doe,123 Main St,40";
@@ -131,14 +136,14 @@ static void test_del_employee_by_name_found(void **state) {
     cleanup_context(&ctx);
 }
 
-static void test_del_employee_by_name_not_found(void **state) {
-    (void) state;
+static void test_del_employee_by_name_not_found(void **state)
+{
+    (void)state;
 
     DBContext ctx = {
         .db_fd = -1,
         .header = malloc(sizeof(DBHeader)),
-        .employees = malloc(2 * sizeof(Employee))
-    };
+        .employees = malloc(2 * sizeof(Employee))};
     create_db_header(&ctx);
 
     char add_string[] = "John Doe,123 Main St,40";
@@ -150,14 +155,14 @@ static void test_del_employee_by_name_not_found(void **state) {
     cleanup_context(&ctx);
 }
 
-static void test_update_employee_hours_success(void **state) {
-    (void) state;
+static void test_update_employee_hours_success(void **state)
+{
+    (void)state;
 
     DBContext ctx = {
         .db_fd = -1,
         .header = malloc(sizeof(DBHeader)),
-        .employees = malloc(2 * sizeof(Employee))
-    };
+        .employees = malloc(2 * sizeof(Employee))};
     create_db_header(&ctx);
 
     char add_string[] = "John Doe,123 Main St,40";
@@ -170,14 +175,14 @@ static void test_update_employee_hours_success(void **state) {
     cleanup_context(&ctx);
 }
 
-static void test_update_employee_hours_not_found(void **state) {
-    (void) state;
+static void test_update_employee_hours_not_found(void **state)
+{
+    (void)state;
 
     DBContext ctx = {
         .db_fd = -1,
         .header = malloc(sizeof(DBHeader)),
-        .employees = malloc(2 * sizeof(Employee))
-    };
+        .employees = malloc(2 * sizeof(Employee))};
     create_db_header(&ctx);
 
     char add_string[] = "John Doe,123 Main St,40";
@@ -189,7 +194,8 @@ static void test_update_employee_hours_not_found(void **state) {
     cleanup_context(&ctx);
 }
 
-int main(void) {
+int main(void)
+{
     const struct CMUnitTest tests[] = {
         cmocka_unit_test(test_create_db_header_success),
         cmocka_unit_test(test_create_db_header_null_context),

@@ -9,14 +9,14 @@
 #include "common.h"
 #include "context.h"
 
-static void test_cleanup_context_valid(void **state) {
-    (void) state;
+static void test_cleanup_context_valid(void **state)
+{
+    (void)state;
 
     DBContext ctx = {
         .db_fd = 10,
         .header = malloc(sizeof(DBHeader)),
-        .employees = malloc(2 * sizeof(Employee))
-    };
+        .employees = malloc(2 * sizeof(Employee))};
 
     cleanup_context(&ctx);
 
@@ -25,8 +25,9 @@ static void test_cleanup_context_valid(void **state) {
     assert_int_equal(ctx.db_fd, 0);
 }
 
-static void test_cleanup_context_null(void **state) {
-    (void) state;
+static void test_cleanup_context_null(void **state)
+{
+    (void)state;
 
     DBContext ctx = {0};
     cleanup_context(&ctx);
@@ -36,14 +37,14 @@ static void test_cleanup_context_null(void **state) {
     assert_int_equal(ctx.db_fd, 0);
 }
 
-static void test_validate_context_valid(void **state) {
-    (void) state;
+static void test_validate_context_valid(void **state)
+{
+    (void)state;
 
     DBContext ctx = {
         .db_fd = 10,
         .header = malloc(sizeof(DBHeader)),
-        .employees = malloc(2 * sizeof(Employee))
-    };
+        .employees = malloc(2 * sizeof(Employee))};
 
     StatusCode status = validate_context(&ctx, true);
     assert_int_equal(status, STATUS_OK);
@@ -51,14 +52,14 @@ static void test_validate_context_valid(void **state) {
     cleanup_context(&ctx);
 }
 
-static void test_validate_context_no_header(void **state) {
-    (void) state;
+static void test_validate_context_no_header(void **state)
+{
+    (void)state;
 
     DBContext ctx = {
         .db_fd = 10,
         .header = NULL,
-        .employees = malloc(2 * sizeof(Employee))
-    };
+        .employees = malloc(2 * sizeof(Employee))};
 
     StatusCode status = validate_context(&ctx, true);
     assert_int_equal(status, STATUS_INVALID_ARGUMENT);
@@ -66,14 +67,14 @@ static void test_validate_context_no_header(void **state) {
     cleanup_context(&ctx);
 }
 
-static void test_validate_context_no_employees(void **state) {
-    (void) state;
+static void test_validate_context_no_employees(void **state)
+{
+    (void)state;
 
     DBContext ctx = {
         .db_fd = 10,
         .header = malloc(sizeof(DBHeader)),
-        .employees = NULL
-    };
+        .employees = NULL};
 
     StatusCode status = validate_context(&ctx, true);
     assert_int_equal(status, STATUS_INVALID_ARGUMENT);
@@ -81,14 +82,14 @@ static void test_validate_context_no_employees(void **state) {
     cleanup_context(&ctx);
 }
 
-static void test_validate_context_no_employees_check_false(void **state) {
-    (void) state;
+static void test_validate_context_no_employees_check_false(void **state)
+{
+    (void)state;
 
     DBContext ctx = {
         .db_fd = 10,
         .header = malloc(sizeof(DBHeader)),
-        .employees = NULL
-    };
+        .employees = NULL};
 
     StatusCode status = validate_context(&ctx, false);
     assert_int_equal(status, STATUS_OK);
@@ -96,9 +97,9 @@ static void test_validate_context_no_employees_check_false(void **state) {
     cleanup_context(&ctx);
 }
 
-
-static void test_convert_uint_to_network(void **state) {
-    (void) state;
+static void test_convert_uint_to_network(void **state)
+{
+    (void)state;
 
     unsigned int val = 0x12345678;
     unsigned int converted = convert_uint(val, true);
@@ -106,8 +107,9 @@ static void test_convert_uint_to_network(void **state) {
     assert_int_equal(val, convert_uint(converted, false));
 }
 
-static void test_convert_ushort_to_network(void **state) {
-    (void) state;
+static void test_convert_ushort_to_network(void **state)
+{
+    (void)state;
 
     unsigned short val = 0x1234;
     unsigned short converted = convert_ushort(val, true);
@@ -115,7 +117,8 @@ static void test_convert_ushort_to_network(void **state) {
     assert_int_equal(val, convert_ushort(converted, false));
 }
 
-int main(void) {
+int main(void)
+{
     const struct CMUnitTest tests[] = {
         cmocka_unit_test(test_cleanup_context_valid),
         cmocka_unit_test(test_cleanup_context_null),

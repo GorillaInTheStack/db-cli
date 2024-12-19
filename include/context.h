@@ -4,10 +4,11 @@
 
 #include "common.h"
 
-typedef struct {
-    int db_fd;                          
-    DBHeader *header;          
-    Employee *employees;    
+typedef struct
+{
+    int db_fd;
+    DBHeader *header;
+    Employee *employees;
 } DBContext;
 
 void cleanup_context(DBContext *ctx);

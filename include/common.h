@@ -9,56 +9,60 @@
 #define NAME_SIZE 256
 #define ADDRESS_SIZE 256
 
-typedef enum {
+typedef enum
+{
     // General status codes
-    STATUS_OK = 0,               
-    STATUS_ERROR = -1,          
+    STATUS_OK = 0,
+    STATUS_ERROR = -1,
 
     // Argument validation
     STATUS_INVALID_ARGUMENT = -2,
 
     // File-related errors
-    STATUS_FILE_NOT_FOUND = -3,   
-    STATUS_FILE_EXISTS = -4,    
-    STATUS_READ_ERROR = -5,      
-    STATUS_WRITE_ERROR = -6,      
-    STATUS_SEEK_ERROR = -7,      
-	STATUS_FILE_OPEN_ERROR = -8,
-	STATUS_FILE_CREATE_ERROR = -9,
+    STATUS_FILE_NOT_FOUND = -3,
+    STATUS_FILE_EXISTS = -4,
+    STATUS_READ_ERROR = -5,
+    STATUS_WRITE_ERROR = -6,
+    STATUS_SEEK_ERROR = -7,
+    STATUS_FILE_OPEN_ERROR = -8,
+    STATUS_FILE_CREATE_ERROR = -9,
 
     // Memory errors
-    STATUS_MEMORY_ERROR = -10, 
+    STATUS_MEMORY_ERROR = -10,
 
     // Database-specific errors
-    STATUS_DB_CORRUPTED = -11, 
-    STATUS_DB_EMPTY = -12, 
-    STATUS_EMPLOYEE_NOT_FOUND = -13 
+    STATUS_DB_CORRUPTED = -11,
+    STATUS_DB_EMPTY = -12,
+    STATUS_EMPLOYEE_NOT_FOUND = -13
 } StatusCode;
 
-const char* status_message(StatusCode status);
+const char *status_message(StatusCode status);
 
-typedef struct {
-	unsigned int magic;
-	unsigned short version;
-	unsigned short count;
-	size_t filesize;
+typedef struct
+{
+    unsigned int magic;
+    unsigned short version;
+    unsigned short count;
+    size_t filesize;
 } DBHeader;
 
-typedef struct {
-	char name[NAME_SIZE];
-	char address[ADDRESS_SIZE];
-	unsigned int hours;
+typedef struct
+{
+    char name[NAME_SIZE];
+    char address[ADDRESS_SIZE];
+    unsigned int hours;
 } Employee;
 
-typedef struct {
-    bool newfile;         // -n flag
-    char *filepath;       // -f argument
-    char *newinput;       // -a argument
-    bool ls_employees;    // -l flag
-    char *search_name;    // -d or -u argument
-    bool del;         	  // -d flag
-    bool update;          // -u flag
-    int input_hours;      // -v argument
+typedef struct
+{
+    bool newfile;      // -n flag
+    char *filepath;    // -f argument
+    char *newinput;    // -a argument
+    bool ls_employees; // -l flag
+    char *search_name; // -d or -u argument
+    bool del;          // -d flag
+    bool update;       // -u flag
+    int input_hours;   // -v argument
 } ProgramOptions;
 
 /**

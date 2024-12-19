@@ -13,8 +13,9 @@
 #include "file.h"
 #include "parse.h"
 
-static void test_process_arguments_newfile(void **state) {
-    (void) state;
+static void test_process_arguments_newfile(void **state)
+{
+    (void)state;
 
     char *test_file = "test.db";
     unlink(test_file);
@@ -38,8 +39,9 @@ static void test_process_arguments_newfile(void **state) {
     unlink(test_file);
 }
 
-static void test_process_arguments_add_employee(void **state) {
-    (void) state;
+static void test_process_arguments_add_employee(void **state)
+{
+    (void)state;
 
     char *test_file = "test.db";
     unlink(test_file);
@@ -57,7 +59,7 @@ static void test_process_arguments_add_employee(void **state) {
     FILE *file = fopen(test_file, "rb");
     assert_non_null(file);
 
-    fseek(file, 16, SEEK_SET);  // Skip header
+    fseek(file, 16, SEEK_SET); // Skip header
     unsigned char buffer[sizeof(Employee)];
     size_t read_size = fread(buffer, 1, sizeof(buffer), file);
     fclose(file);
@@ -72,8 +74,9 @@ static void test_process_arguments_add_employee(void **state) {
     unlink(test_file);
 }
 
-static void test_process_arguments_list_employees(void **state) {
-    (void) state;
+static void test_process_arguments_list_employees(void **state)
+{
+    (void)state;
 
     char *test_file = "test.db";
     unlink(test_file);
@@ -96,8 +99,9 @@ static void test_process_arguments_list_employees(void **state) {
     unlink(test_file);
 }
 
-static void test_process_arguments_delete_employee(void **state) {
-    (void) state;
+static void test_process_arguments_delete_employee(void **state)
+{
+    (void)state;
 
     char *test_file = "test.db";
     unlink(test_file);
@@ -120,8 +124,9 @@ static void test_process_arguments_delete_employee(void **state) {
     unlink(test_file);
 }
 
-static void test_process_arguments_update_employee(void **state) {
-    (void) state;
+static void test_process_arguments_update_employee(void **state)
+{
+    (void)state;
 
     char *test_file = "test.db";
     unlink(test_file);
@@ -144,7 +149,7 @@ static void test_process_arguments_update_employee(void **state) {
     FILE *file = fopen(test_file, "rb");
     assert_non_null(file);
 
-    fseek(file, 16, SEEK_SET);  // Skip header
+    fseek(file, 16, SEEK_SET); // Skip header
     unsigned char buffer[sizeof(Employee)];
     size_t read_size = fread(buffer, 1, sizeof(buffer), file);
     fclose(file);
@@ -157,15 +162,14 @@ static void test_process_arguments_update_employee(void **state) {
     unlink(test_file);
 }
 
-
-int main(void) {
+int main(void)
+{
     const struct CMUnitTest tests[] = {
         cmocka_unit_test(test_process_arguments_newfile),
         cmocka_unit_test(test_process_arguments_add_employee),
         cmocka_unit_test(test_process_arguments_list_employees),
         cmocka_unit_test(test_process_arguments_delete_employee),
-        cmocka_unit_test(test_process_arguments_update_employee)
-    };
+        cmocka_unit_test(test_process_arguments_update_employee)};
 
     return cmocka_run_group_tests(tests, NULL, NULL);
 }
